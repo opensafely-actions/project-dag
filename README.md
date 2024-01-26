@@ -1,21 +1,68 @@
 # project-dag
 
-[View on OpenSAFELY](https://jobs.opensafely.org/repo/https%253A%252F%252Fgithub.com%252Fopensafely%252Fproject-dag)
+## Summary
 
-Details of the purpose and any published outputs from this project can be found at the link above.
+This is the code and configuration for project-dag, a Python reusable action for the OpenSAFELY framework.
 
-The contents of this repository MUST NOT be considered an accurate or valid representation of the study or its purpose. 
-This repository may reflect an incomplete or incorrect analysis with no further ongoing work.
-The content has ONLY been made public to support the OpenSAFELY [open science and transparency principles](https://www.opensafely.org/about/#contributing-to-best-practice-around-open-science) and to support the sharing of re-usable code for other subsequent users.
-No clinical, policy or safety conclusions must be drawn from the contents of this repository.
+Given a project.yaml file, the action generates a [Mermaid](https://github.com/mermaid-js/mermaid#readme) diagram displaying a directed acyclic graph (DAG) of the actions within the file. This gives a visual representation of the discrete steps within your OpenSAFELY project. Below is an example.
 
-# About the OpenSAFELY framework
 
-The OpenSAFELY framework is a Trusted Research Environment (TRE) for electronic
-health records research in the NHS, with a focus on public accountability and
-research quality.
+```mermaid
+---
+title: Project Pipeline
+---
+graph TD
+    generate_dataset_1[generate_dataset_1]
+    generate_dataset_2[generate_dataset_2]
+    aggregate_data[aggregate_data]
+    generate_dataset_1 --> aggregate_data
+    generate_dataset_2 --> aggregate_data
+    visualise_data[visualise_data]
+    aggregate_data --> visualise_data
+```
 
-Read more at [OpenSAFELY.org](https://opensafely.org).
+# Usage
 
-# Licences
-As standard, research projects have a MIT license. 
+You can use this action to generate a Mermaid diagram by following these steps:
+
+1. Prepare a YAML file that defines the actions and their dependencies:
+
+```
+actions:
+  generate_dataset_1:
+    run: ehrql:v1 generate-dataset analysis/dataset_definition.py --output output/dataset.csv.gz
+    outputs:
+      highly_sensitive:
+        dataset: output/dataset.csv.gz
+  
+  generate_dataset_2:
+    run: ehrql:v1 generate-dataset analysis/dataset_definition.py --output output/dataset.csv.gz
+    outputs:
+      highly_sensitive:
+        dataset: output/dataset.csv.gz
+
+  aggregate_data:
+    run: python:v2 python analysis/aggregate.py
+    needs: [generate_dataset_1, generate_dataset_2]
+    outputs:
+      moderately_sensitive:
+        dataset: output/dataset_aggregated.csv.gz
+```
+
+2. Run the action::
+
+```
+generate_project_dag:
+    run: python:v2 python analysis/project_dag.py --yaml-path project.yaml --output-path project.dag.md
+    outputs:
+      moderately_sensitive:
+        counts: project.dag.md
+```
+
+There are two optional arguments:
+- `--yaml-path` (default: `project.yaml`): The path to the YAML file that defines the actions and their dependencies.
+- `--output-path` (default: `project.dag.md`): The path to the output file where the Mermaid diagram will be saved in markdown format.
+
+3. The action will read the YAML file, generate a Mermaid diagram based on the defined actions and dependencies, and save it to the specified output file in markdown format.
+
+4. Open the generated markdown file using a markdown viewer or editor to view and render the Mermaid diagram or add it to your README.
