@@ -6,3 +6,8 @@ expectations:
 
 actions:
 
+  generate_project_dag:
+    run: python:v2 python analysis/project_dag.py
+    outputs:
+      moderately_sensitive:
+        counts: project.dag.md
